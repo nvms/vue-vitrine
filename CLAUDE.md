@@ -206,18 +206,29 @@ Rules for public-facing content:
 
 ## roadmap
 
-Priority order, top is next. When an item lands, delete its bullet. Nothing is built yet - this roadmap is the build plan.
+Priority order, top is next. When an item lands, delete its bullet.
 
-1. CLI, config, and discovery: `bin/vitrine.js`, `src/cli.js`, `src/config.js`, `src/discovery.js`. Running `vitrine` with no arguments starts the dev server; the glob finds `*.story.{vue,js,ts}` and builds the story tree.
-2. Dev server and host app shell: Vite middleware-mode serving the Vue host app - sidebar tree, canvas with per-variant isolation, variant switching, HMR on story files.
-3. component-meta controls: wrap `vue-component-meta`, map the prop schema to control widgets, render the controls panel, and live-bind it to the subject component in each variant.
-4. Docs and actions: the props / events / slots / exposed table and the emitted-event log, both from component metadata.
-5. The `.story.{js,ts}` CSF-style format, then static export with `vitrine build`.
-6. Interaction tests (`vitrine test`, play functions on Vitest browser mode) and the inline accessibility tab.
+1. Dev server and host app shell: Vite middleware-mode serving the Vue host app - sidebar tree, canvas with per-variant isolation, variant switching, HMR on story files. The story tree from `discovery.js` feeds the sidebar; `serve.js` currently prints that tree and watches, and grows into the Vite host here.
+2. component-meta controls: wrap `vue-component-meta`, map the prop schema to control widgets, render the controls panel, and live-bind it to the subject component in each variant.
+3. Docs and actions: the props / events / slots / exposed table and the emitted-event log, both from component metadata.
+4. The `.story.{js,ts}` CSF-style format, then static export with `vitrine build`.
+5. Interaction tests (`vitrine test`, play functions on Vitest browser mode) and the inline accessibility tab.
 
 ## current status
 
-Scaffolded and not yet built. The repo has `package.json`, CI, the audit script, issue templates, and this file. `src/` and `bin/` do not exist yet. Roadmap item 1 is next.
+Roadmap item 1 (CLI, config, discovery) is built and tested.
+
+- `bin/vitrine.js` -> `src/cli.js`: hand-written arg parser and subcommand dispatch. Only `serve` is registered; `build` and `test` are added when their roadmap items land. Flags: `-c/--config`, `--root`, `-h/--help`, `-v/--version`.
+- `src/config.js`: loads `vitrine.config.{js,mjs}`, merges over `defaults`, resolves paths. CLI server overrides (`port`/`host`/`open`) are plumbed through `loadConfig` but not yet parsed from the CLI - that happens in roadmap item 1 with the real server.
+- `src/discovery.js`: `discoverStories` (tinyglobby), `buildStoryTree` (folder/story tree), `watchStories` (chokidar). `awaitWriteFinish` is intentionally off - it coalesced add+change events; Vite's own watcher handles content stability in the next item.
+- `src/serve.js`: the no-arg entry. For now it discovers, prints the story tree, and watches. It grows into the Vite host app in roadmap item 1.
+- `src/index.js`: exports `defineConfig`. `defineStory` and `Variant` are exported once the runtime exists.
+- `examples/`: real components (Button, Toast, Counter, Divider) and story files covering union props, booleans, slots, events, no props, and both story formats.
+- 39 unit tests across config, discovery, and CLI parsing.
+
+Dependencies added: `tinyglobby`, `chokidar` 5 (its `>=20.19` engine matches ours), `picomatch` (keeps watch-event matching consistent with the discovery scan).
+
+Known gotcha for roadmap item 2: `vue-component-meta` extracts string-literal unions from TypeScript types. The JS example components annotate prop unions with JSDoc `@type {'a'|'b'}` so meta has something to read - verify meta actually picks those up, and decide the fallback (text input) when it cannot.
 
 ## session handoff
 
