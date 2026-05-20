@@ -1,0 +1,7 @@
+node_modules/
+types/
+dist/
+.vitrine/
+.handoff/
+.DS_Store
+*.log

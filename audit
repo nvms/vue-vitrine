@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$DIR"
+
+RED="\033[31m"
+YELLOW="\033[33m"
+GREEN="\033[32m"
+DIM="\033[2m"
+RESET="\033[0m"
+BOLD="\033[1m"
+CYAN="\033[36m"
+
+issues=()
+fixes=()
+
+echo -e "${BOLD}vue-vitrine${RESET} ${DIM}audit${RESET}"
+echo ""
+
+uncommitted=$(git status --short 2>/dev/null || true)
+if [ -n "$uncommitted" ]; then
+  staged=$(git diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ')
+  unstaged=$(git diff --name-only 2>/dev/null | wc -l | tr -d ' ')
+  untracked=$(git ls-files --others --exclude-standard 2>/dev/null | wc -l | tr -d ' ')
+  parts=()
+  [ "$staged" -gt 0 ] && parts+=("${staged} staged")
+  [ "$unstaged" -gt 0 ] && parts+=("${unstaged} modified")
+  [ "$untracked" -gt 0 ] && parts+=("${untracked} untracked")
+  issues+=("${YELLOW}uncommitted: $(IFS=', '; echo "${parts[*]}")${RESET}")
+  fixes+=("${CYAN}git add -A && git commit${RESET}")
+fi
+
+if git rev-parse --abbrev-ref '@{u}' >/dev/null 2>&1; then
+  unpushed=$(git log --oneline '@{u}..HEAD' 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$unpushed" -gt 0 ]; then
+    issues+=("${YELLOW}${unpushed} unpushed commit(s)${RESET}")
+    fixes+=("${CYAN}git push${RESET}")
+  fi
+else
+  issues+=("${YELLOW}no upstream branch${RESET}")
+  fixes+=("${CYAN}git push -u origin main${RESET}")
+fi
+
+local_version=$(node -p "require('./package.json').version" 2>/dev/null || echo "?")
+pkg_name=$(node -p "require('./package.json').name" 2>/dev/null || echo "vue-vitrine")
+echo -e "  ${DIM}version${RESET}  ${local_version}"
+
+npm_version=$(npm view "$pkg_name" version 2>/dev/null || echo "not published")
+if [ "$npm_version" = "not published" ]; then
+  echo -e "  ${DIM}npm  not published${RESET}"
+elif [ "$local_version" != "$npm_version" ]; then
+  issues+=("${RED}version mismatch: local ${local_version} / npm ${npm_version}${RESET}")
+  fixes+=("${CYAN}npm publish --access public${RESET}")
+else
+  echo -e "  ${GREEN}npm${RESET}  ${DIM}${npm_version} published${RESET}"
+fi
+
+if [ ! -f package-lock.json ]; then
+  issues+=("${RED}package-lock.json missing${RESET}")
+  fixes+=("${CYAN}npm install${RESET}")
+fi
+
+ci_result=$(gh run list --limit 1 --json conclusion,status 2>/dev/null || echo "[]")
+ci_conclusion=$(echo "$ci_result" | node -p "try { JSON.parse(require('fs').readFileSync(0,'utf8'))[0]?.conclusion ?? 'none' } catch { 'none' }" 2>/dev/null || echo "none")
+ci_status=$(echo "$ci_result" | node -p "try { JSON.parse(require('fs').readFileSync(0,'utf8'))[0]?.status ?? 'none' } catch { 'none' }" 2>/dev/null || echo "none")
+
+if [ "$ci_status" = "in_progress" ] || [ "$ci_status" = "queued" ]; then
+  echo -e "  ${YELLOW}ci${RESET}  ${ci_status}"
+elif [ "$ci_conclusion" = "failure" ]; then
+  issues+=("${RED}ci: tests failing${RESET}")
+  fixes+=("${CYAN}gh run view --log-failed${RESET}")
+elif [ "$ci_conclusion" = "success" ]; then
+  echo -e "  ${GREEN}ci${RESET}  ${DIM}passing${RESET}"
+else
+  echo -e "  ${DIM}ci  no runs${RESET}"
+fi
+
+open_issues=$(gh issue list --state open --json number 2>/dev/null | node -p "try { JSON.parse(require('fs').readFileSync(0,'utf8')).length } catch { '?' }" 2>/dev/null || echo "?")
+if [ "$open_issues" != "?" ] && [ "$open_issues" != "0" ]; then
+  echo -e "  ${YELLOW}issues${RESET}  ${open_issues} open"
+elif [ "$open_issues" = "0" ]; then
+  echo -e "  ${DIM}issues  none open${RESET}"
+fi
+
+if [ ${#issues[@]} -eq 0 ]; then
+  echo ""
+  echo -e "  ${GREEN}all clear${RESET}"
+  echo ""
+  exit 0
+fi
+
+echo ""
+for i in "${!issues[@]}"; do
+  echo -e "  ${issues[$i]}"
+  if [ -n "${fixes[$i]:-}" ]; then
+    echo -e "    ${fixes[$i]}"
+  fi
+done
+echo ""
+exit 1

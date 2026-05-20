@@ -1,0 +1,58 @@
+{
+  "name": "vue-vitrine",
+  "version": "1.0.0",
+  "description": "A component workshop for Vue 3 with a controls playground generated from your component's prop types.",
+  "type": "module",
+  "license": "MIT",
+  "author": "nvms",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nvms/vue-vitrine.git"
+  },
+  "homepage": "https://github.com/nvms/vue-vitrine#readme",
+  "bugs": {
+    "url": "https://github.com/nvms/vue-vitrine/issues"
+  },
+  "keywords": [
+    "vue",
+    "vue3",
+    "component",
+    "workshop",
+    "stories",
+    "storybook",
+    "histoire",
+    "vite"
+  ],
+  "bin": {
+    "vitrine": "./bin/vitrine.js"
+  },
+  "main": "./src/index.js",
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./src/index.js"
+    }
+  },
+  "files": [
+    "src",
+    "bin",
+    "types"
+  ],
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "types": "tsc --declaration --allowJs --emitDeclarationOnly --skipLibCheck --target es2020 --module nodenext --moduleResolution nodenext --strict false --esModuleInterop true --outDir ./types src/index.js",
+    "prepublishOnly": "npm run types"
+  },
+  "peerDependencies": {
+    "vite": "^5.0.0 || ^6.0.0 || ^7.0.0",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0"
+  }
+}
