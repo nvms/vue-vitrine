@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import vue from '@vitejs/plugin-vue'
 import { createServer as createViteServer } from 'vite'
 import { discoverStories } from './discovery.js'
+import { createMetaService } from './meta.js'
 import { c } from './output.js'
 import { vitrinePlugin } from './plugin.js'
 
@@ -24,6 +25,7 @@ const runtimeDir = resolve(packageDir, 'src/runtime')
  */
 export async function serve(config) {
   const stories = await discoverStories(config)
+  const metaService = createMetaService(config.root)
 
   const vite = await createViteServer({
     root: config.root,
@@ -40,7 +42,10 @@ export async function serve(config) {
       dedupe: ['vue'],
       alias: { 'vue-vitrine': resolve(packageDir, 'src/index.js') },
     },
-    plugins: [vue(), vitrinePlugin({ config, initialStories: stories })],
+    plugins: [
+      vue(),
+      vitrinePlugin({ config, initialStories: stories, metaService }),
+    ],
     ...config.vite,
   })
 
@@ -60,9 +65,9 @@ export async function serve(config) {
     })
   })
 
-  await listen(httpServer, config.server.port, config.server.host)
+  const port = await listen(httpServer, config.server.port, config.server.host)
 
-  const url = `http://${config.server.host}:${config.server.port}/`
+  const url = `http://${config.server.host}:${port}/`
   printBanner(config, stories, url)
   if (config.server.open) openBrowser(url)
 
@@ -76,17 +81,33 @@ export async function serve(config) {
 }
 
 /**
+ * Listen on the given port, advancing to the next port when one is in use.
+ *
  * @param {import('node:http').Server} server
- * @param {number} port
+ * @param {number} startPort
  * @param {string} host
- * @returns {Promise<void>}
+ * @param {number} [maxAttempts]
+ * @returns {Promise<number>} The port the server bound to.
  */
-function listen(server, port, host) {
+function listen(server, startPort, host, maxAttempts = 20) {
   return new Promise((resolveListen, rejectListen) => {
-    server.once('error', rejectListen)
+    let port = startPort
+    let attempts = 0
+
+    const onError = (error) => {
+      if (error.code === 'EADDRINUSE' && attempts < maxAttempts) {
+        attempts += 1
+        port += 1
+        server.listen(port, host)
+      } else {
+        rejectListen(error)
+      }
+    }
+
+    server.on('error', onError)
     server.listen(port, host, () => {
-      server.off('error', rejectListen)
-      resolveListen()
+      server.off('error', onError)
+      resolveListen(port)
     })
   })
 }

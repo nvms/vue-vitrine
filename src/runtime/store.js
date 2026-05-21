@@ -1,5 +1,6 @@
-import { computed, markRaw, ref, shallowRef } from 'vue'
+import { computed, markRaw, ref, shallowRef, watch } from 'vue'
 import { stories as manifest } from 'virtual:vitrine-stories'
+import { createControlState } from './controls.js'
 import { harvestStory } from './mount.js'
 import { buildTitleTree } from './tree.js'
 
@@ -31,6 +32,70 @@ export const loading = ref(true)
 export const activeRecord = computed(
   () => records.value.find((record) => record.id === activeId.value) ?? null,
 )
+
+/** Control state for the active variant. Replaced whenever the variant changes. */
+export const activeControls = shallowRef(createControlState())
+
+/** Control descriptors for the active story's subject, from `vue-component-meta`. */
+export const descriptors = shallowRef(
+  /** @type {import('../meta.js').ControlDescriptor[]} */ ([]),
+)
+
+/** Status of the metadata request: `idle`, `loading`, `ready`, or `error`. */
+export const metaStatus = ref('idle')
+
+const metaCache = new Map()
+
+watch([activeId, activeVariant], () => {
+  activeControls.value = createControlState()
+})
+
+watch(activeRecord, (record) => loadMeta(record), { immediate: true })
+
+/**
+ * Fetch control descriptors for a story's subject component.
+ *
+ * @param {StoryRecord|null} record
+ * @returns {Promise<void>}
+ */
+async function loadMeta(record) {
+  const file = record?.subject?.__file
+  descriptors.value = []
+  if (!file) {
+    metaStatus.value = 'idle'
+    return
+  }
+  if (metaCache.has(file)) {
+    descriptors.value = metaCache.get(file)
+    metaStatus.value = 'ready'
+    return
+  }
+  metaStatus.value = 'loading'
+  try {
+    const response = await fetch(
+      `/__vitrine/meta?file=${encodeURIComponent(file)}`,
+    )
+    const data = await response.json()
+    if (activeRecord.value?.subject?.__file !== file) return
+    if (data.error) {
+      metaStatus.value = 'error'
+      return
+    }
+    metaCache.set(file, data.props)
+    descriptors.value = data.props
+    metaStatus.value = 'ready'
+  } catch {
+    if (activeRecord.value?.subject?.__file === file) {
+      metaStatus.value = 'error'
+    }
+  }
+}
+
+/** Drop cached metadata and re-fetch it for the active story. Used by hot reload. */
+export function reloadMeta() {
+  metaCache.clear()
+  loadMeta(activeRecord.value)
+}
 
 /**
  * Load and inspect every story file.

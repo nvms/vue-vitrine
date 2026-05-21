@@ -28,7 +28,7 @@ const CONFIG_NAMES = ['vitrine.config.js', 'vitrine.config.mjs']
 export const defaults = Object.freeze({
   stories: ['**/*.story.{vue,js,ts}'],
   exclude: ['**/node_modules/**', '**/dist/**', '**/.vitrine/**', '**/.git/**'],
-  server: Object.freeze({ port: 6006, host: 'localhost', open: false }),
+  server: Object.freeze({ port: 6007, host: 'localhost', open: false }),
 })
 
 /**

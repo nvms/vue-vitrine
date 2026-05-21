@@ -11,5 +11,8 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    // run files sequentially: the vue-component-meta test is CPU-heavy and
+    // starves the timing-sensitive file-watch test when run concurrently
+    fileParallelism: false,
   },
 })

@@ -1,9 +1,10 @@
-import { createApp, ref } from 'vue'
+import { createApp, h, ref } from 'vue'
 import { createStoryContext, STORY_KEY } from './context.js'
 import { Variant } from './Variant.js'
 
 /**
  * @typedef {import('./context.js').StoryMeta} StoryMeta
+ * @typedef {import('./controls.js').ControlState} ControlState
  */
 
 /**
@@ -17,10 +18,6 @@ import { Variant } from './Variant.js'
 
 /**
  * Mount a story file once with no active variant to read its metadata.
- *
- * The mount runs `defineStory` and every `<Variant>` setup, so the subject and
- * the variant names are registered, but no variant slot renders. The temporary
- * app is torn down before returning.
  *
  * @param {import('vue').Component} component The story file component.
  * @returns {HarvestResult}
@@ -58,11 +55,11 @@ export function harvestStory(component) {
  * @param {import('vue').Component} component The story file component.
  * @param {string} variant The variant to render.
  * @param {Element} el The element to mount into.
- * @param {{ onError?: (error: unknown) => void }} [options]
+ * @param {{ onError?: (error: unknown) => void, controls?: ControlState }} [options]
  * @returns {import('vue').App} The app. Call `unmount()` to tear it down.
  */
 export function mountStoryVariant(component, variant, el, options = {}) {
-  const context = createStoryContext(ref(variant))
+  const context = createStoryContext(ref(variant), options.controls ?? null)
   const app = createApp(component)
   app.config.errorHandler = (cause) => options.onError?.(cause)
   app.component('Variant', Variant)
@@ -73,15 +70,21 @@ export function mountStoryVariant(component, variant, el, options = {}) {
 
 /**
  * Mount a subject component directly, for a story that registered a subject
- * but declared no variants.
+ * but declared no variants. Control overrides are applied to the subject.
  *
  * @param {import('vue').Component} component The subject component.
  * @param {Element} el The element to mount into.
- * @param {{ onError?: (error: unknown) => void }} [options]
+ * @param {{ onError?: (error: unknown) => void, controls?: ControlState }} [options]
  * @returns {import('vue').App} The app. Call `unmount()` to tear it down.
  */
 export function mountSubject(component, el, options = {}) {
-  const app = createApp(component)
+  const root = {
+    render() {
+      const overrides = options.controls ? { ...options.controls.overrides } : {}
+      return h(component, overrides)
+    },
+  }
+  const app = createApp(root)
   app.config.errorHandler = (cause) => options.onError?.(cause)
   app.mount(el)
   return app

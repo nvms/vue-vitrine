@@ -1,8 +1,16 @@
 <script setup>
 import { computed } from 'vue'
 import StoryCanvas from './Canvas.vue'
+import Controls from './Controls.vue'
 import Sidebar from './Sidebar.vue'
-import { activeRecord, activeVariant, loading, records, selectVariant } from './store.js'
+import {
+  activeControls,
+  activeRecord,
+  activeVariant,
+  loading,
+  records,
+  selectVariant,
+} from './store.js'
 
 const variants = computed(() => activeRecord.value?.variants ?? [])
 </script>
@@ -36,11 +44,19 @@ const variants = computed(() => activeRecord.value?.variants ?? [])
             </button>
           </nav>
         </header>
-        <StoryCanvas :record="activeRecord" :variant="activeVariant" />
+        <StoryCanvas
+          :record="activeRecord"
+          :variant="activeVariant"
+          :controls="activeControls"
+        />
       </template>
 
       <div v-else class="placeholder">Select a story.</div>
     </main>
+
+    <aside v-if="activeRecord" class="panel">
+      <Controls />
+    </aside>
   </div>
 </template>
 
@@ -111,6 +127,13 @@ const variants = computed(() => activeRecord.value?.variants ?? [])
 .variant.active {
   color: var(--vitrine-accent);
   background: var(--vitrine-accent-soft);
+}
+
+.panel {
+  width: 304px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--vitrine-border);
+  background: var(--vitrine-panel);
 }
 
 .placeholder {

@@ -30,3 +30,19 @@ body {
   background: var(--vitrine-bg);
   -webkit-font-smoothing: antialiased;
 }
+
+.vitrine-input {
+  width: 100%;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--vitrine-text);
+  background: var(--vitrine-bg);
+  border: 1px solid var(--vitrine-border);
+  border-radius: 5px;
+}
+
+.vitrine-input:focus {
+  outline: none;
+  border-color: var(--vitrine-accent);
+}

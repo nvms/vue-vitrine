@@ -208,10 +208,9 @@ Rules for public-facing content:
 
 Priority order, top is next. When an item lands, delete its bullet.
 
-1. component-meta controls: wrap `vue-component-meta`, map the prop schema to control widgets, render the controls panel, and live-bind it to the subject component in each variant.
-2. Docs and actions: the props / events / slots / exposed table and the emitted-event log, both from component metadata.
-3. The `.story.{js,ts}` CSF-style format, then static export with `vitrine build`.
-4. Interaction tests (`vitrine test`, play functions on Vitest browser mode) and the inline accessibility tab.
+1. Docs and actions: the props / events / slots / exposed table and the emitted-event log, both from component metadata. `meta.js` already extracts props; extend `describe()` to also return events, slots, and exposed.
+2. The `.story.{js,ts}` CSF-style format, then static export with `vitrine build`.
+3. Interaction tests (`vitrine test`, play functions on Vitest browser mode) and the inline accessibility tab.
 
 ## current status
 
@@ -226,11 +225,12 @@ CLI and discovery layer:
 Dev server and host app:
 
 - `src/serve.js`: Vite dev server in middleware mode behind a plain `node:http` server. `root` is the user's project; the host app is served from the package via `/@fs/`. `server.fs.allow` includes the package dir; `vue-vitrine` is aliased to `src/index.js` so story files and the host share one copy of the runtime (and one `STORY_KEY` Symbol - critical, see below).
-- `src/plugin.js`: the `virtual:vitrine-stories` module (story manifest with per-story dynamic imports) and add/remove watching that triggers a full reload.
-- `src/runtime/`: the host app. `context.js` (the `STORY_KEY` inject Symbol + `createStoryContext`), `Variant.js`, `story.js` (`defineStory`), `mount.js` (`harvestStory`, `mountStoryVariant`, `mountSubject`), `store.js` (reactive story store + HMR refresh), `tree.js`, `App.vue`, `Sidebar.vue`, `SidebarNode.vue`, `Canvas.vue`, `main.js`, `host.css`, `index.html`.
+- `src/plugin.js`: the `virtual:vitrine-stories` module (story manifest with per-story dynamic imports), the `/__vitrine/meta` metadata endpoint, add/remove watching that triggers a full reload, and `.vue`-change watching that invalidates the meta checker.
+- `src/meta.js`: server-side `vue-component-meta` wrapper. `createMetaService(root)` builds one checker lazily (it starts a TypeScript program, so it is slow on first use) and reuses it. `describe(file)` returns control descriptors; `controlFor(schema)` maps a `vue-component-meta` schema to a widget kind.
+- `src/runtime/`: the host app. `context.js` (the `STORY_KEY` inject Symbol + `createStoryContext`), `Variant.js`, `story.js` (`defineStory`), `controls.js` (`createControlState`, the `applyControls` vnode interception, `coerceSeed`), `mount.js` (`harvestStory`, `mountStoryVariant`, `mountSubject`), `store.js` (reactive story store, meta fetching, HMR refresh), `tree.js`, `App.vue`, `Sidebar.vue`, `SidebarNode.vue`, `Canvas.vue`, `Controls.vue`, `controls/{ToggleField,SelectField,NumberField,TextField,JsonField}.vue`, `main.js`, `host.css`, `index.html`.
 - `src/index.js`: exports `defineConfig`, `defineStory`, `Variant`.
-- `examples/`: real components (Button, Toast, Counter, Divider) and `.story.vue` files covering union props, booleans, slots, events, and no props.
-- 49 unit tests across config, discovery, CLI parsing, the title tree, and the runtime (harvest + mount, run under jsdom). `vitest.config.js` adds the Vue plugin and the `vue-vitrine` alias so tests can import `.vue` files.
+- `examples/`: `Button.vue` (TypeScript SFC, so its union props become select controls), `Toast.vue`, `Counter.vue`, `Divider.vue` (JS), with `.story.vue` files covering union props, booleans, slots, events, and no props.
+- 62 tests across config, discovery, CLI parsing, the title tree, the runtime (harvest + mount + control overrides, jsdom), and `meta.js`. `vitest.config.js` adds the Vue plugin, the `vue-vitrine` alias, and `fileParallelism: false` (the heavy `vue-component-meta` test starves the timing-sensitive watch test when run concurrently).
 
 How a story renders:
 
@@ -238,14 +238,20 @@ How a story renders:
 2. The host imports each story module and `harvestStory` mounts it once with no active variant - `defineStory` records the subject, every `<Variant>` registers its name - then unmounts.
 3. `Canvas` mounts the active variant in its own Vue app via `mountStoryVariant`; switching variants tears that app down and creates a new one. A story with a subject but no `<Variant>` blocks gets a synthetic `Default` variant rendered with `mountSubject`.
 
+How controls work:
+
+1. The host reads the subject component's `__file` (set by `@vitejs/plugin-vue`) and fetches `/__vitrine/meta?file=...`, which runs `vue-component-meta` and returns control descriptors.
+2. `Controls.vue` renders a widget per descriptor. Each variant has its own `ControlState` (`overrides` + discovered `seeds`), created by the host and passed into the per-variant Canvas app.
+3. `Variant.js` runs `applyControls` over its slot vnodes: it `cloneVNode`s every vnode whose type is the subject, merging the panel's `overrides` on top of the literal attributes. The first subject vnode's literal props are reported back as the seed values. No control wiring is needed in the story file.
+
 Key constraints for the next session:
 
 - The `STORY_KEY` Symbol in `runtime/context.js` must be one module instance shared by `defineStory` (called inside the user's story file) and the host. The `vue-vitrine` alias in `serve.js` and `vitest.config.js` guarantees this. Breaking the alias breaks `inject` silently.
-- HMR: `.vue` edits hot-swap in place via Vue's HMR runtime (free, even inside the Canvas's separate app). `main.js` listens for `vite:afterUpdate` and calls `store.refreshStory` to re-harvest a changed story so its variant list stays current. Story file add/remove triggers a full reload from the plugin.
+- `vue-component-meta` reads runtime `defineProps({...})` declarations for JS components, so string-literal unions only become select controls for TypeScript components (`defineProps<{...}>()`). JS unions degrade to text inputs - this is expected, not a bug. `Button.vue` is TypeScript precisely to exercise the select path.
+- HMR: `.vue` edits hot-swap in place via Vue's HMR runtime (free, even inside the Canvas's separate app). `main.js` listens for `vite:afterUpdate`, calls `store.refreshStory` to re-harvest a changed story, and `store.reloadMeta` to re-fetch metadata. Story file add/remove triggers a full reload from the plugin.
+- The dev server defaults to port 6007 (Storybook and Histoire both default to 6006) and advances to the next free port when one is taken.
 
-Dependencies added: `tinyglobby`, `chokidar` 5 (its `>=20.19` engine matches ours), `picomatch`, `@vitejs/plugin-vue`, and `jsdom` (dev).
-
-Known gotcha for roadmap item 1 (controls): `vue-component-meta` extracts string-literal unions from TypeScript types. The JS example components annotate prop unions with JSDoc `@type {'a'|'b'}` so meta has something to read - verify meta actually picks those up, and decide the fallback (text input) when it cannot.
+Dependencies added: `tinyglobby`, `chokidar` 5 (its `>=20.19` engine matches ours), `picomatch`, `@vitejs/plugin-vue`, `vue-component-meta`, `typescript` (a runtime dependency now, since `vue-component-meta` needs it), and `jsdom` (dev).
 
 ## session handoff
 

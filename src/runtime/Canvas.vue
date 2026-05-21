@@ -5,6 +5,7 @@ import { mountStoryVariant, mountSubject } from './mount.js'
 const props = defineProps({
   record: { type: Object, required: true },
   variant: { type: String, default: null },
+  controls: { type: Object, default: null },
 })
 
 const stage = ref(null)
@@ -41,10 +42,14 @@ function render() {
 
   try {
     if (record.synthetic && record.subject) {
-      app = mountSubject(record.subject, stage.value, { onError })
+      app = mountSubject(record.subject, stage.value, {
+        onError,
+        controls: props.controls,
+      })
     } else if (record.component && props.variant) {
       app = mountStoryVariant(record.component, props.variant, stage.value, {
         onError,
+        controls: props.controls,
       })
     }
   } catch (cause) {
@@ -52,7 +57,10 @@ function render() {
   }
 }
 
-watch(() => [props.record?.id, props.record?.component, props.variant], render)
+watch(
+  () => [props.record?.id, props.record?.component, props.variant, props.controls],
+  render,
+)
 onMounted(render)
 onBeforeUnmount(teardown)
 </script>

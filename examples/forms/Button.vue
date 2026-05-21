@@ -1,14 +1,27 @@
-<script setup>
-defineProps({
-  /** @type {'primary' | 'secondary' | 'ghost'} */
-  variant: { type: String, default: 'primary' },
-  /** @type {'sm' | 'md' | 'lg'} */
-  size: { type: String, default: 'md' },
-  disabled: { type: Boolean, default: false },
-  loading: { type: Boolean, default: false },
-})
+<script setup lang="ts">
+withDefaults(
+  defineProps<{
+    /** Visual style of the button. */
+    variant?: 'primary' | 'secondary' | 'ghost'
+    /** Size of the button. */
+    size?: 'sm' | 'md' | 'lg'
+    /** Disable interaction. */
+    disabled?: boolean
+    /** Show a spinner and block interaction. */
+    loading?: boolean
+  }>(),
+  {
+    variant: 'primary',
+    size: 'md',
+    disabled: false,
+    loading: false,
+  },
+)
 
-defineEmits(['click'])
+defineEmits<{
+  /** Fired when the button is activated. */
+  click: [event: MouseEvent]
+}>()
 </script>
 
 <template>

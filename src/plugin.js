@@ -17,10 +17,10 @@ const RESOLVED_ID = `\0${VIRTUAL_ID}`
  * story file is added or removed the module is invalidated and the page
  * reloads. Edits to existing story files are left to Vue's own hot reload.
  *
- * @param {{ config: ResolvedConfig, initialStories: StoryFile[] }} options
+ * @param {{ config: ResolvedConfig, initialStories: StoryFile[], metaService: import('./meta.js').MetaService }} options
  * @returns {import('vite').Plugin}
  */
-export function vitrinePlugin({ config, initialStories }) {
+export function vitrinePlugin({ config, initialStories, metaService }) {
   let stories = initialStories
 
   return {
@@ -41,6 +41,23 @@ export function vitrinePlugin({ config, initialStories }) {
     },
 
     configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (!req.url || !req.url.startsWith('/__vitrine/meta')) return next()
+        const file = new URL(req.url, 'http://localhost').searchParams.get('file')
+        res.setHeader('content-type', 'application/json')
+        if (!file) {
+          res.statusCode = 400
+          res.end(JSON.stringify({ error: 'missing file parameter' }))
+          return
+        }
+        try {
+          res.end(JSON.stringify(metaService.describe(file)))
+        } catch (error) {
+          res.statusCode = 500
+          res.end(JSON.stringify({ error: String(error?.message ?? error) }))
+        }
+      })
+
       const reload = async (file) => {
         if (!isStoryFile(config, file)) return
         stories = await discoverStories(config)
@@ -50,6 +67,9 @@ export function vitrinePlugin({ config, initialStories }) {
       }
       server.watcher.on('add', reload)
       server.watcher.on('unlink', reload)
+      server.watcher.on('change', (file) => {
+        if (file.endsWith('.vue')) metaService.invalidate()
+      })
     },
   }
 }
