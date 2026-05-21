@@ -143,6 +143,17 @@ export function watchStories(config, handlers = {}) {
 }
 
 /**
+ * Test whether an absolute path is a story file under the project.
+ *
+ * @param {ResolvedConfig} config
+ * @param {string} absPath
+ * @returns {boolean}
+ */
+export function isStoryFile(config, absPath) {
+  return createMatcher(config)(toPosix(relative(config.root, absPath)))
+}
+
+/**
  * Build a predicate that matches story files against the include and exclude globs.
  *
  * @param {ResolvedConfig} config

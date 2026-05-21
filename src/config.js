@@ -3,8 +3,8 @@ import { isAbsolute, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 /**
- * @typedef {import('./index.js').VitrineConfig} VitrineConfig
- * @typedef {import('./index.js').VitrineServerConfig} VitrineServerConfig
+ * @typedef {import('./config-api.js').VitrineConfig} VitrineConfig
+ * @typedef {import('./config-api.js').VitrineServerConfig} VitrineServerConfig
  */
 
 /**

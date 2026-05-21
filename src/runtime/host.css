@@ -1,0 +1,32 @@
+:root {
+  --vitrine-bg: #ffffff;
+  --vitrine-panel: #f6f7f9;
+  --vitrine-border: #e3e5e9;
+  --vitrine-text: #1c1e22;
+  --vitrine-muted: #6b7280;
+  --vitrine-accent: #2563eb;
+  --vitrine-accent-soft: #e8effe;
+  --vitrine-danger: #b42318;
+  --vitrine-danger-soft: #fdecea;
+  --vitrine-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  --vitrine-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#vitrine-app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--vitrine-font);
+  color: var(--vitrine-text);
+  background: var(--vitrine-bg);
+  -webkit-font-smoothing: antialiased;
+}

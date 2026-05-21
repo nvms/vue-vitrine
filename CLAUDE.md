@@ -208,27 +208,44 @@ Rules for public-facing content:
 
 Priority order, top is next. When an item lands, delete its bullet.
 
-1. Dev server and host app shell: Vite middleware-mode serving the Vue host app - sidebar tree, canvas with per-variant isolation, variant switching, HMR on story files. The story tree from `discovery.js` feeds the sidebar; `serve.js` currently prints that tree and watches, and grows into the Vite host here.
-2. component-meta controls: wrap `vue-component-meta`, map the prop schema to control widgets, render the controls panel, and live-bind it to the subject component in each variant.
-3. Docs and actions: the props / events / slots / exposed table and the emitted-event log, both from component metadata.
-4. The `.story.{js,ts}` CSF-style format, then static export with `vitrine build`.
-5. Interaction tests (`vitrine test`, play functions on Vitest browser mode) and the inline accessibility tab.
+1. component-meta controls: wrap `vue-component-meta`, map the prop schema to control widgets, render the controls panel, and live-bind it to the subject component in each variant.
+2. Docs and actions: the props / events / slots / exposed table and the emitted-event log, both from component metadata.
+3. The `.story.{js,ts}` CSF-style format, then static export with `vitrine build`.
+4. Interaction tests (`vitrine test`, play functions on Vitest browser mode) and the inline accessibility tab.
 
 ## current status
 
-Roadmap item 1 (CLI, config, discovery) is built and tested.
+The CLI, config, discovery, the dev server, and the host app shell are built and tested.
 
-- `bin/vitrine.js` -> `src/cli.js`: hand-written arg parser and subcommand dispatch. Only `serve` is registered; `build` and `test` are added when their roadmap items land. Flags: `-c/--config`, `--root`, `-h/--help`, `-v/--version`.
-- `src/config.js`: loads `vitrine.config.{js,mjs}`, merges over `defaults`, resolves paths. CLI server overrides (`port`/`host`/`open`) are plumbed through `loadConfig` but not yet parsed from the CLI - that happens in roadmap item 1 with the real server.
-- `src/discovery.js`: `discoverStories` (tinyglobby), `buildStoryTree` (folder/story tree), `watchStories` (chokidar). `awaitWriteFinish` is intentionally off - it coalesced add+change events; Vite's own watcher handles content stability in the next item.
-- `src/serve.js`: the no-arg entry. For now it discovers, prints the story tree, and watches. It grows into the Vite host app in roadmap item 1.
-- `src/index.js`: exports `defineConfig`. `defineStory` and `Variant` are exported once the runtime exists.
-- `examples/`: real components (Button, Toast, Counter, Divider) and story files covering union props, booleans, slots, events, no props, and both story formats.
-- 39 unit tests across config, discovery, and CLI parsing.
+CLI and discovery layer:
 
-Dependencies added: `tinyglobby`, `chokidar` 5 (its `>=20.19` engine matches ours), `picomatch` (keeps watch-event matching consistent with the discovery scan).
+- `bin/vitrine.js` -> `src/cli.js`: hand-written arg parser and subcommand dispatch. Only `serve` is registered; `build` and `test` are added when their roadmap items land. Flags: `-c/--config`, `--root`, `-p/--port`, `--host`, `--open`, `-h/--help`, `-v/--version`.
+- `src/config.js`: loads `vitrine.config.{js,mjs}`, merges over `defaults`, resolves paths. `defineConfig` and the config typedefs live in `src/config-api.js` (no dependencies) so they are safe to import from both the Node CLI and the browser runtime.
+- `src/discovery.js`: `discoverStories` (tinyglobby), `buildStoryTree`, `watchStories` (chokidar), `isStoryFile`. `awaitWriteFinish` is intentionally off - it coalesced add+change events. `watchStories` is a discovery primitive; the dev server uses Vite's own watcher instead.
 
-Known gotcha for roadmap item 2: `vue-component-meta` extracts string-literal unions from TypeScript types. The JS example components annotate prop unions with JSDoc `@type {'a'|'b'}` so meta has something to read - verify meta actually picks those up, and decide the fallback (text input) when it cannot.
+Dev server and host app:
+
+- `src/serve.js`: Vite dev server in middleware mode behind a plain `node:http` server. `root` is the user's project; the host app is served from the package via `/@fs/`. `server.fs.allow` includes the package dir; `vue-vitrine` is aliased to `src/index.js` so story files and the host share one copy of the runtime (and one `STORY_KEY` Symbol - critical, see below).
+- `src/plugin.js`: the `virtual:vitrine-stories` module (story manifest with per-story dynamic imports) and add/remove watching that triggers a full reload.
+- `src/runtime/`: the host app. `context.js` (the `STORY_KEY` inject Symbol + `createStoryContext`), `Variant.js`, `story.js` (`defineStory`), `mount.js` (`harvestStory`, `mountStoryVariant`, `mountSubject`), `store.js` (reactive story store + HMR refresh), `tree.js`, `App.vue`, `Sidebar.vue`, `SidebarNode.vue`, `Canvas.vue`, `main.js`, `host.css`, `index.html`.
+- `src/index.js`: exports `defineConfig`, `defineStory`, `Variant`.
+- `examples/`: real components (Button, Toast, Counter, Divider) and `.story.vue` files covering union props, booleans, slots, events, and no props.
+- 49 unit tests across config, discovery, CLI parsing, the title tree, and the runtime (harvest + mount, run under jsdom). `vitest.config.js` adds the Vue plugin and the `vue-vitrine` alias so tests can import `.vue` files.
+
+How a story renders:
+
+1. `discovery` finds story files; `plugin` exposes them as `virtual:vitrine-stories`.
+2. The host imports each story module and `harvestStory` mounts it once with no active variant - `defineStory` records the subject, every `<Variant>` registers its name - then unmounts.
+3. `Canvas` mounts the active variant in its own Vue app via `mountStoryVariant`; switching variants tears that app down and creates a new one. A story with a subject but no `<Variant>` blocks gets a synthetic `Default` variant rendered with `mountSubject`.
+
+Key constraints for the next session:
+
+- The `STORY_KEY` Symbol in `runtime/context.js` must be one module instance shared by `defineStory` (called inside the user's story file) and the host. The `vue-vitrine` alias in `serve.js` and `vitest.config.js` guarantees this. Breaking the alias breaks `inject` silently.
+- HMR: `.vue` edits hot-swap in place via Vue's HMR runtime (free, even inside the Canvas's separate app). `main.js` listens for `vite:afterUpdate` and calls `store.refreshStory` to re-harvest a changed story so its variant list stays current. Story file add/remove triggers a full reload from the plugin.
+
+Dependencies added: `tinyglobby`, `chokidar` 5 (its `>=20.19` engine matches ours), `picomatch`, `@vitejs/plugin-vue`, and `jsdom` (dev).
+
+Known gotcha for roadmap item 1 (controls): `vue-component-meta` extracts string-literal unions from TypeScript types. The JS example components annotate prop unions with JSDoc `@type {'a'|'b'}` so meta has something to read - verify meta actually picks those up, and decide the fallback (text input) when it cannot.
 
 ## session handoff
 

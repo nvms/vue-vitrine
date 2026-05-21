@@ -9,8 +9,8 @@ export const version = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
 ).version
 
-const ALIASES = { c: 'config', h: 'help', v: 'version' }
-const VALUE_FLAGS = new Set(['config', 'root'])
+const ALIASES = { c: 'config', h: 'help', v: 'version', p: 'port' }
+const VALUE_FLAGS = new Set(['config', 'root', 'port', 'host'])
 
 /**
  * Parsed command-line arguments.
@@ -21,6 +21,9 @@ const VALUE_FLAGS = new Set(['config', 'root'])
  * @property {boolean} [version] The `--version` flag was given.
  * @property {string} [config] Path to a config file.
  * @property {string} [root] Project root.
+ * @property {string} [port] Dev server port.
+ * @property {string} [host] Dev server host.
+ * @property {boolean} [open] Open a browser on start.
  * @property {string[]} _ Positional arguments.
  */
 
@@ -82,8 +85,32 @@ export function parseArgs(argv) {
  */
 async function runServe(args) {
   const root = args.root ? resolve(process.cwd(), args.root) : process.cwd()
-  const config = await loadConfig({ root, configFile: args.config })
+  const config = await loadConfig({
+    root,
+    configFile: args.config,
+    overrides: serverOverrides(args),
+  })
   await serve(config)
+}
+
+/**
+ * Build server option overrides from CLI flags.
+ *
+ * @param {ParsedArgs} args
+ * @returns {Partial<import('./config-api.js').VitrineServerConfig>}
+ */
+function serverOverrides(args) {
+  const overrides = {}
+  if (args.port !== undefined) {
+    const port = Number(args.port)
+    if (!Number.isInteger(port) || port < 0 || port > 65535) {
+      throw new Error(`invalid port: ${args.port}`)
+    }
+    overrides.port = port
+  }
+  if (args.host !== undefined) overrides.host = args.host
+  if (args.open !== undefined) overrides.open = Boolean(args.open)
+  return overrides
 }
 
 /** @type {Record<string, (args: ParsedArgs) => Promise<void>>} */
@@ -109,6 +136,9 @@ export function helpText() {
     `${c.bold('Options')}`,
     '  -c, --config <file>  path to a config file',
     '      --root <dir>     project root (default: current directory)',
+    '  -p, --port <number>  dev server port',
+    '      --host [host]    dev server host',
+    '      --open           open a browser on start',
     '  -h, --help           show this help',
     '  -v, --version        show the version',
   ].join('\n')
