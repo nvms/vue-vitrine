@@ -47,9 +47,9 @@ function onInput(event) {
 </script>
 
 <template>
-  <div class="json">
+  <div>
     <textarea
-      class="vitrine-input json-input"
+      class="json"
       :class="{ invalid: error }"
       rows="3"
       spellcheck="false"
@@ -58,24 +58,42 @@ function onInput(event) {
       @focus="focused = true"
       @blur="focused = false"
     />
-    <div v-if="error" class="json-error">{{ error }}</div>
+    <p v-if="error" class="json-error">{{ error }}</p>
   </div>
 </template>
 
 <style scoped>
-.json-input {
-  font-family: var(--vitrine-mono);
+.json {
+  display: block;
+  width: 100%;
+  min-height: 62px;
+  padding: 8px 9px;
+  font-family: var(--vt-mono);
   font-size: 12px;
+  line-height: 1.5;
+  color: var(--vt-text);
+  background: var(--vt-input);
+  border: 1px solid var(--vt-line);
+  border-radius: var(--vt-radius-sm);
   resize: vertical;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
-.json-input.invalid {
-  border-color: var(--vitrine-danger);
+.json:focus {
+  outline: none;
+  border-color: var(--vt-accent);
+  box-shadow: 0 0 0 3px var(--vt-accent-soft);
+}
+
+.json.invalid {
+  border-color: var(--vt-danger);
 }
 
 .json-error {
-  margin-top: 3px;
+  margin: 5px 0 0;
   font-size: 11px;
-  color: var(--vitrine-danger);
+  color: var(--vt-danger);
 }
 </style>

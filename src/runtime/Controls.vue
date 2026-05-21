@@ -61,48 +61,50 @@ function reset(descriptor) {
   <div class="controls">
     <div class="controls-head">Controls</div>
 
-    <div v-if="metaStatus === 'loading'" class="controls-note">
-      Analyzing component...
-    </div>
-    <div v-else-if="metaStatus === 'error'" class="controls-note">
-      Component metadata is unavailable.
-    </div>
-    <div v-else-if="descriptors.length === 0" class="controls-note">
-      This component has no props.
-    </div>
+    <div class="controls-body">
+      <p v-if="metaStatus === 'loading'" class="note">Analyzing component</p>
+      <p v-else-if="metaStatus === 'error'" class="note">
+        Component metadata is unavailable.
+      </p>
+      <p v-else-if="descriptors.length === 0" class="note">
+        This component takes no props.
+      </p>
 
-    <div v-else class="controls-list">
-      <div
-        v-for="descriptor in descriptors"
-        :key="`${activeVariant}/${descriptor.name}`"
-        class="control-row"
-      >
-        <div class="control-label">
-          <span class="control-name">{{ descriptor.name }}</span>
-          <span v-if="descriptor.required" class="control-required">required</span>
-          <button
-            v-if="isOverridden(descriptor)"
-            type="button"
-            class="control-reset"
-            @click="reset(descriptor)"
-          >
-            reset
-          </button>
-        </div>
+      <div v-else class="list">
+        <div
+          v-for="descriptor in descriptors"
+          :key="`${activeVariant}/${descriptor.name}`"
+          class="control"
+        >
+          <div class="control-head">
+            <span class="control-name" :class="{ modified: isOverridden(descriptor) }">
+              {{ descriptor.name }}
+              <span v-if="descriptor.required" class="control-req">*</span>
+            </span>
+            <button
+              type="button"
+              class="control-reset"
+              :class="{ shown: isOverridden(descriptor) }"
+              @click="reset(descriptor)"
+            >
+              reset
+            </button>
+          </div>
 
-        <component
-          :is="widgets[descriptor.control.kind]"
-          :model-value="valueFor(descriptor)"
-          v-bind="
-            descriptor.control.kind === 'select'
-              ? { options: descriptor.control.options }
-              : null
-          "
-          @update:model-value="setValue(descriptor, $event)"
-        />
+          <component
+            :is="widgets[descriptor.control.kind]"
+            :model-value="valueFor(descriptor)"
+            v-bind="
+              descriptor.control.kind === 'select'
+                ? { options: descriptor.control.options }
+                : null
+            "
+            @update:model-value="setValue(descriptor, $event)"
+          />
 
-        <div v-if="descriptor.description" class="control-desc">
-          {{ descriptor.description }}
+          <p v-if="descriptor.description" class="control-desc">
+            {{ descriptor.description }}
+          </p>
         </div>
       </div>
     </div>
@@ -114,74 +116,97 @@ function reset(descriptor) {
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow-y: auto;
 }
 
 .controls-head {
-  padding: 14px 16px;
-  font-weight: 600;
-  font-size: 13px;
-  border-bottom: 1px solid var(--vitrine-border);
-}
-
-.controls-note {
-  padding: 16px;
-  font-size: 13px;
-  color: var(--vitrine-muted);
-}
-
-.controls-list {
-  padding: 8px 16px 16px;
-}
-
-.control-row {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--vitrine-border);
-}
-
-.control-row:last-child {
-  border-bottom: none;
-}
-
-.control-label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
+  height: var(--vt-topbar);
+  flex-shrink: 0;
+  padding: 0 var(--vt-gutter);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--vt-text-3);
+  border-bottom: 1px solid var(--vt-line);
+}
+
+.controls-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.note {
+  margin: 0;
+  padding: 16px var(--vt-gutter);
+  font-size: 12.5px;
+  color: var(--vt-text-3);
+}
+
+.list {
+  padding: 4px var(--vt-gutter) 18px;
+}
+
+.control {
+  padding: 14px 0;
+}
+
+.control + .control {
+  border-top: 1px solid var(--vt-line-soft);
+}
+
+.control-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 20px;
+  margin-bottom: 9px;
 }
 
 .control-name {
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--vitrine-mono);
+  font-family: var(--vt-mono);
+  font-size: 12px;
+  color: var(--vt-text);
+  transition: color 0.12s ease;
 }
 
-.control-required {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--vitrine-muted);
+.control-name.modified {
+  color: var(--vt-accent);
+}
+
+.control-req {
+  color: var(--vt-text-3);
 }
 
 .control-reset {
-  margin-left: auto;
-  padding: 1px 7px;
   font: inherit;
   font-size: 11px;
-  color: var(--vitrine-muted);
+  color: var(--vt-text-3);
   background: transparent;
-  border: 1px solid var(--vitrine-border);
-  border-radius: 4px;
+  border: none;
+  padding: 0;
   cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.12s ease,
+    color 0.12s ease;
+}
+
+.control-reset.shown {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .control-reset:hover {
-  color: var(--vitrine-text);
+  color: var(--vt-accent);
 }
 
 .control-desc {
-  margin-top: 6px;
+  margin: 7px 0 0;
   font-size: 12px;
-  color: var(--vitrine-muted);
+  line-height: 1.5;
+  color: var(--vt-text-3);
 }
 </style>

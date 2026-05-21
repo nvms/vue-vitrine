@@ -1,30 +1,37 @@
 <script setup>
+import { computed } from 'vue'
 import { activeId, selectStory } from './store.js'
 
-defineProps({
+const props = defineProps({
   node: { type: Object, required: true },
+  depth: { type: Number, default: 0 },
 })
+
+const indent = computed(() => ({ paddingLeft: `${14 + props.depth * 12}px` }))
 </script>
 
 <template>
   <li v-if="node.type === 'folder'" class="folder">
-    <div class="folder-label">{{ node.label }}</div>
+    <div class="folder-label" :style="indent">{{ node.label }}</div>
     <ul class="list">
       <SidebarNode
         v-for="child in node.children"
         :key="child.path"
         :node="child"
+        :depth="depth + 1"
       />
     </ul>
   </li>
 
-  <li v-else class="leaf">
+  <li v-else>
     <button
       class="story"
       :class="{ active: node.id === activeId }"
+      :style="indent"
       @click="selectStory(node.id)"
     >
-      {{ node.label }}
+      <span class="dot" />
+      <span class="story-label">{{ node.label }}</span>
     </button>
   </li>
 </template>
@@ -33,39 +40,67 @@ defineProps({
 .list {
   list-style: none;
   margin: 0;
-  padding: 0 0 0 12px;
+  padding: 0;
 }
 
 .folder-label {
-  padding: 6px 18px 4px;
-  font-size: 11px;
+  padding-top: 12px;
+  padding-bottom: 4px;
+  padding-right: 14px;
+  font-size: 10.5px;
   font-weight: 600;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--vitrine-muted);
+  color: var(--vt-text-3);
 }
 
 .story {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
-  text-align: left;
-  padding: 5px 18px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-right: 14px;
   font: inherit;
   font-size: 13px;
-  color: var(--vitrine-text);
+  text-align: left;
+  color: var(--vt-text-2);
   background: transparent;
   border: none;
-  border-left: 2px solid transparent;
   cursor: pointer;
+  transition:
+    color 0.12s ease,
+    background-color 0.12s ease;
 }
 
 .story:hover {
-  background: var(--vitrine-border);
+  color: var(--vt-text);
+  background: var(--vt-surface-hi);
 }
 
 .story.active {
-  color: var(--vitrine-accent);
-  border-left-color: var(--vitrine-accent);
-  background: var(--vitrine-accent-soft);
+  color: var(--vt-accent);
+  background: var(--vt-accent-soft);
+  box-shadow: inset 2px 0 0 var(--vt-accent);
+}
+
+.dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+  opacity: 0.4;
+}
+
+.story.active .dot {
+  opacity: 1;
+}
+
+.story-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

@@ -20,32 +20,42 @@ defineEmits(['update:modelValue'])
 
 <style scoped>
 .toggle {
-  width: 38px;
-  height: 22px;
+  width: 34px;
+  height: 20px;
   padding: 2px;
-  border: 1px solid var(--vitrine-border);
+  flex-shrink: 0;
+  border: 1px solid var(--vt-line);
   border-radius: 999px;
-  background: var(--vitrine-panel);
+  background: var(--vt-input);
   cursor: pointer;
-  transition: background 0.12s;
+  transition:
+    background-color 0.14s ease,
+    border-color 0.14s ease;
 }
 
 .toggle.on {
-  background: var(--vitrine-accent);
-  border-color: var(--vitrine-accent);
+  background: var(--vt-accent);
+  border-color: var(--vt-accent);
+}
+
+.toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--vt-accent-soft);
 }
 
 .knob {
   display: block;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-  transition: transform 0.12s;
+  background: var(--vt-text-3);
+  transition:
+    transform 0.14s ease,
+    background-color 0.14s ease;
 }
 
 .toggle.on .knob {
-  transform: translateX(16px);
+  background: #15161a;
+  transform: translateX(14px);
 }
 </style>

@@ -244,6 +244,12 @@ How controls work:
 2. `Controls.vue` renders a widget per descriptor. Each variant has its own `ControlState` (`overrides` + discovered `seeds`), created by the host and passed into the per-variant Canvas app. A control's displayed value comes from `resolveControlValue`, in precedence order: an explicit override, then the literal value in the variant markup, then the subject's runtime default (`record.defaults`, read from the component's props declaration). Skipping the default fallback makes a control show a wrong value, e.g. a boolean prop appearing `false` when its default is `true`.
 3. `Variant.js` runs `applyControls` over its slot vnodes: it `cloneVNode`s every vnode whose type is the subject, merging the panel's `overrides` on top of the literal attributes. The first subject vnode's literal props are reported back as the seed values. No control wiring is needed in the story file.
 
+Host app design:
+
+- A dark "chrome" (sidebar, top bar, controls panel) frames a light canvas where the user's component renders. Amber accent, monospace for technical labels (prop names, the wordmark). The intent is that the chrome recedes and the component is the focus.
+- All design tokens are CSS variables (`--vt-*`) in `runtime/host.css`. Components reference the tokens and never hard-code colors or metrics. The three columns share a `--vt-topbar`-height header so the top border reads as one continuous line.
+- Zero layout shift on interaction is a hard rule. The controls panel's row header is a fixed-height line and the reset button toggles `opacity`/`pointer-events`, never `v-if` - so revealing it cannot reflow the panel. Any new panel (Docs, Actions) must follow the same token system and shift-free discipline.
+
 Key constraints for the next session:
 
 - The `STORY_KEY` Symbol in `runtime/context.js` must be one module instance shared by `defineStory` (called inside the user's story file) and the host. The `vue-vitrine` alias in `serve.js` and `vitest.config.js` guarantees this. Breaking the alias breaks `inject` silently.

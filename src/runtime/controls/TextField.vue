@@ -7,7 +7,7 @@ defineEmits(['update:modelValue'])
 
 <template>
   <input
-    class="vitrine-input"
+    class="vt-input"
     type="text"
     :value="modelValue ?? ''"
     @input="$emit('update:modelValue', $event.target.value)"

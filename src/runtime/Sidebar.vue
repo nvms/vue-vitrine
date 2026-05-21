@@ -6,14 +6,21 @@ import { tree } from './store.js'
 <template>
   <nav class="tree">
     <ul class="list">
-      <SidebarNode v-for="node in tree" :key="node.path" :node="node" />
+      <SidebarNode
+        v-for="node in tree"
+        :key="node.path"
+        :node="node"
+        :depth="0"
+      />
     </ul>
   </nav>
 </template>
 
 <style scoped>
 .tree {
-  padding: 8px 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0 16px;
 }
 
 .list {

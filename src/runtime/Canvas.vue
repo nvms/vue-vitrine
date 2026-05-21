@@ -20,6 +20,13 @@ const showStage = computed(() => {
   return record.synthetic || record.variants.length > 0
 })
 
+const emptyNote = computed(() => {
+  const record = props.record
+  return Boolean(
+    record && !record.error && !record.synthetic && record.variants.length === 0,
+  )
+})
+
 function teardown() {
   if (app) {
     try {
@@ -67,17 +74,16 @@ onBeforeUnmount(teardown)
 
 <template>
   <div class="canvas">
-    <div v-if="record?.error" class="message error">{{ record.error }}</div>
-    <div v-else-if="renderError" class="message error">
-      Render error: {{ renderError }}
+    <div class="canvas-pad">
+      <div v-if="record?.error" class="notice notice-error">
+        {{ record.error }}
+      </div>
+      <div v-else-if="renderError" class="notice notice-error">
+        {{ renderError }}
+      </div>
+      <div v-else-if="emptyNote" class="notice">This story has no variants.</div>
+      <div v-show="showStage" ref="stage" class="stage" />
     </div>
-    <div
-      v-else-if="record && !record.synthetic && record.variants.length === 0"
-      class="message"
-    >
-      This story has no variants.
-    </div>
-    <div v-show="showStage" ref="stage" class="stage" />
   </div>
 </template>
 
@@ -86,45 +92,49 @@ onBeforeUnmount(teardown)
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 32px;
-  background:
-    linear-gradient(45deg, var(--vitrine-panel) 25%, transparent 25%),
-    linear-gradient(-45deg, var(--vitrine-panel) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, var(--vitrine-panel) 75%),
-    linear-gradient(-45deg, transparent 75%, var(--vitrine-panel) 75%);
-  background-size: 20px 20px;
-  background-position:
-    0 0,
-    0 10px,
-    10px -10px,
-    -10px 0;
+  background-color: var(--vt-canvas);
+  background-image: radial-gradient(
+    var(--vt-canvas-dot) 1px,
+    transparent 1px
+  );
+  background-size: 18px 18px;
+  background-position: -1px -1px;
+}
+
+.canvas-pad {
+  min-width: 100%;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
 }
 
 .stage {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  align-items: flex-start;
-  padding: 24px;
-  background: var(--vitrine-bg);
-  border: 1px solid var(--vitrine-border);
-  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
 }
 
-.message {
+.notice {
+  max-width: 420px;
   padding: 12px 16px;
-  font-size: 13px;
-  color: var(--vitrine-muted);
-  background: var(--vitrine-bg);
-  border: 1px solid var(--vitrine-border);
-  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--vt-canvas-ink-dim);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--vt-canvas-dot);
+  border-radius: var(--vt-radius);
 }
 
-.message.error {
-  color: var(--vitrine-danger);
-  background: var(--vitrine-danger-soft);
-  border-color: var(--vitrine-danger);
-  font-family: var(--vitrine-mono);
+.notice-error {
+  font-family: var(--vt-mono);
+  font-size: 12px;
+  color: #a3271c;
+  background: var(--vt-danger-soft);
+  border-color: rgba(226, 86, 74, 0.4);
   white-space: pre-wrap;
 }
 </style>

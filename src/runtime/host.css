@@ -1,16 +1,42 @@
 :root {
-  --vitrine-bg: #ffffff;
-  --vitrine-panel: #f6f7f9;
-  --vitrine-border: #e3e5e9;
-  --vitrine-text: #1c1e22;
-  --vitrine-muted: #6b7280;
-  --vitrine-accent: #2563eb;
-  --vitrine-accent-soft: #e8effe;
-  --vitrine-danger: #b42318;
-  --vitrine-danger-soft: #fdecea;
-  --vitrine-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
-  --vitrine-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* chrome - the dark frame around the workshop */
+  --vt-bg: #0e0f11;
+  --vt-surface: #17181b;
+  --vt-surface-hi: #1f2024;
+  --vt-input: #202125;
+  --vt-line: #2a2b30;
+  --vt-line-soft: #212226;
+
+  /* canvas - the light stage the component renders on */
+  --vt-canvas: #fbfbfa;
+  --vt-canvas-dot: #e4e4e0;
+  --vt-canvas-ink: #1b1c1e;
+  --vt-canvas-ink-dim: #7c7d80;
+
+  /* text on chrome */
+  --vt-text: #ececed;
+  --vt-text-2: #9a9ba1;
+  --vt-text-3: #66676d;
+
+  /* accent */
+  --vt-accent: #f3a738;
+  --vt-accent-hi: #f7b85d;
+  --vt-accent-soft: rgba(243, 167, 56, 0.13);
+
+  --vt-danger: #e2564a;
+  --vt-danger-soft: rgba(226, 86, 74, 0.13);
+
+  /* metrics */
+  --vt-topbar: 49px;
+  --vt-gutter: 14px;
+  --vt-radius: 6px;
+  --vt-radius-sm: 4px;
+  --vt-control-h: 30px;
+
+  --vt-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    system-ui, sans-serif;
+  --vt-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo,
+    Consolas, monospace;
 }
 
 * {
@@ -25,24 +51,65 @@ body,
 
 body {
   margin: 0;
-  font-family: var(--vitrine-font);
-  color: var(--vitrine-text);
-  background: var(--vitrine-bg);
-  -webkit-font-smoothing: antialiased;
-}
-
-.vitrine-input {
-  width: 100%;
-  padding: 5px 8px;
-  font: inherit;
+  font-family: var(--vt-sans);
   font-size: 13px;
-  color: var(--vitrine-text);
-  background: var(--vitrine-bg);
-  border: 1px solid var(--vitrine-border);
-  border-radius: 5px;
+  line-height: 1.45;
+  color: var(--vt-text);
+  background: var(--vt-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-.vitrine-input:focus {
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(140, 142, 150, 0.32) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(140, 142, 150, 0.28);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 142, 150, 0.5);
+  background-clip: padding-box;
+}
+
+/* shared single-line input surface */
+.vt-input {
+  display: block;
+  width: 100%;
+  height: var(--vt-control-h);
+  padding: 0 9px;
+  font-family: var(--vt-sans);
+  font-size: 13px;
+  color: var(--vt-text);
+  background: var(--vt-input);
+  border: 1px solid var(--vt-line);
+  border-radius: var(--vt-radius-sm);
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.vt-input::placeholder {
+  color: var(--vt-text-3);
+}
+
+.vt-input:hover {
+  border-color: #34353b;
+}
+
+.vt-input:focus {
   outline: none;
-  border-color: var(--vitrine-accent);
+  border-color: var(--vt-accent);
+  box-shadow: 0 0 0 3px var(--vt-accent-soft);
 }
