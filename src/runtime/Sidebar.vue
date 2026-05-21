@@ -5,14 +5,12 @@ import { tree } from './store.js'
 
 <template>
   <nav class="tree">
-    <ul class="list">
-      <SidebarNode
-        v-for="node in tree"
-        :key="node.path"
-        :node="node"
-        :depth="0"
-      />
-    </ul>
+    <SidebarNode
+      v-for="node in tree"
+      :key="node.path"
+      :node="node"
+      :depth="0"
+    />
   </nav>
 </template>
 
@@ -20,12 +18,6 @@ import { tree } from './store.js'
 .tree {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 0 16px;
-}
-
-.list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  padding: 6px 0 18px;
 }
 </style>

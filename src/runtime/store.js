@@ -29,6 +29,9 @@ export const activeId = ref(/** @type {string|null} */ (null))
 export const activeVariant = ref(/** @type {string|null} */ (null))
 export const loading = ref(true)
 
+/** Story ids whose variant children are expanded in the sidebar tree. */
+export const expanded = ref(/** @type {Set<string>} */ (new Set()))
+
 /** The currently selected story record. */
 export const activeRecord = computed(
   () => records.value.find((record) => record.id === activeId.value) ?? null,
@@ -133,19 +136,37 @@ export async function refreshStory(id) {
 }
 
 /**
- * @param {string} id
+ * Select a specific variant of a story and expand that story in the tree.
+ *
+ * @param {string} storyId
+ * @param {string|null} variant
  */
-export function selectStory(id) {
-  activeId.value = id
-  const record = records.value.find((entry) => entry.id === id)
-  activeVariant.value = record?.variants[0] ?? null
+export function select(storyId, variant) {
+  activeId.value = storyId
+  activeVariant.value = variant
+  expanded.value.add(storyId)
 }
 
 /**
- * @param {string} name
+ * Select a story by its first variant.
+ *
+ * @param {string} storyId
  */
-export function selectVariant(name) {
-  activeVariant.value = name
+export function selectStory(storyId) {
+  const record = records.value.find((entry) => entry.id === storyId)
+  select(storyId, record?.variants[0] ?? null)
+}
+
+/**
+ * Expand or collapse a story's variants in the tree.
+ *
+ * @param {string} storyId
+ */
+export function toggleExpanded(storyId) {
+  const next = new Set(expanded.value)
+  if (next.has(storyId)) next.delete(storyId)
+  else next.add(storyId)
+  expanded.value = next
 }
 
 /**
@@ -237,6 +258,7 @@ function ensureSelection() {
   if (!current || !current.variants.includes(activeVariant.value)) {
     activeVariant.value = current?.variants[0] ?? null
   }
+  if (activeId.value) expanded.value.add(activeId.value)
 }
 
 /**

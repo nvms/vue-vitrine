@@ -24,9 +24,9 @@ defineEmits(['update:modelValue'])
   height: 20px;
   padding: 2px;
   flex-shrink: 0;
-  border: 1px solid var(--vt-line);
+  border: 1px solid var(--vt-line-2);
   border-radius: 999px;
-  background: var(--vt-input);
+  background: var(--vt-field);
   cursor: pointer;
   transition:
     background-color 0.14s ease,
@@ -34,13 +34,13 @@ defineEmits(['update:modelValue'])
 }
 
 .toggle.on {
-  background: var(--vt-accent);
-  border-color: var(--vt-accent);
+  background: var(--vt-blue);
+  border-color: var(--vt-blue);
 }
 
 .toggle:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--vt-accent-soft);
+  box-shadow: 0 0 0 3px var(--vt-blue-soft);
 }
 
 .knob {
@@ -48,14 +48,14 @@ defineEmits(['update:modelValue'])
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--vt-text-3);
+  background: var(--vt-ink-3);
   transition:
     transform 0.14s ease,
     background-color 0.14s ease;
 }
 
 .toggle.on .knob {
-  background: #15161a;
+  background: #ffffff;
   transform: translateX(14px);
 }
 </style>

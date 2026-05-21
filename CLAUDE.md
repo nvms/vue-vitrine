@@ -244,9 +244,15 @@ How controls work:
 2. `Controls.vue` renders a widget per descriptor. Each variant has its own `ControlState` (`overrides` + discovered `seeds`), created by the host and passed into the per-variant Canvas app. A control's displayed value comes from `resolveControlValue`, in precedence order: an explicit override, then the literal value in the variant markup, then the subject's runtime default (`record.defaults`, read from the component's props declaration). Skipping the default fallback makes a control show a wrong value, e.g. a boolean prop appearing `false` when its default is `true`.
 3. `Variant.js` runs `applyControls` over its slot vnodes: it `cloneVNode`s every vnode whose type is the subject, merging the panel's `overrides` on top of the literal attributes. The first subject vnode's literal props are reported back as the seed values. No control wiring is needed in the story file.
 
-Host app design:
+Sidebar navigation:
 
-- A dark "chrome" (sidebar, top bar, controls panel) frames a light canvas where the user's component renders. Amber accent, monospace for technical labels (prop names, the wordmark). The intent is that the chrome recedes and the component is the focus.
+- The sidebar tree is `folder -> story -> variant`. A story with two or more variants is an expandable branch (chevron, variant count); a story with one variant is a direct leaf. Clicking a variant selects it. There are no variant tabs - variants live only in the tree, so a story with many of them scrolls vertically rather than overflowing a horizontal bar.
+- `store.js` owns selection (`activeId` + `activeVariant`, set via `select`/`selectStory`) and the `expanded` set of story ids. `buildTitleTree` builds the three-level tree; variant order is never sorted.
+
+Host app design - the "Draft" direction:
+
+- Light throughout, cool and architectural - a drafting table. `--vt-paper` canvas, `--vt-panel` chrome, blueprint-blue accent (`--vt-blue`), monospace for technical labels and values. There is no dark mode; the whole shell is light so it never fights the (usually light) component.
+- The canvas is graph paper (a fine layered grid). The component is framed by four corner brackets and a live `W x H` dimension readout driven by a `ResizeObserver` on the stage - measurement is the signature of the aesthetic.
 - All design tokens are CSS variables (`--vt-*`) in `runtime/host.css`. Components reference the tokens and never hard-code colors or metrics. The three columns share a `--vt-topbar`-height header so the top border reads as one continuous line.
 - Zero layout shift on interaction is a hard rule. The controls panel's row header is a fixed-height line and the reset button toggles `opacity`/`pointer-events`, never `v-if` - so revealing it cannot reflow the panel. Any new panel (Docs, Actions) must follow the same token system and shift-free discipline.
 

@@ -9,17 +9,18 @@ import {
   activeVariant,
   loading,
   records,
-  selectVariant,
 } from './store.js'
 
-const variants = computed(() => activeRecord.value?.variants ?? [])
-
-const crumb = computed(() =>
-  (activeRecord.value?.title ?? '')
+const crumb = computed(() => {
+  const record = activeRecord.value
+  if (!record) return []
+  const parts = record.title
     .split('/')
     .map((part) => part.trim())
-    .filter(Boolean),
-)
+    .filter(Boolean)
+  if (activeVariant.value) parts.push(activeVariant.value)
+  return parts
+})
 </script>
 
 <template>
@@ -27,17 +28,17 @@ const crumb = computed(() =>
     <aside class="sidebar">
       <div class="brand">
         <svg class="mark" viewBox="0 0 16 16" aria-hidden="true">
-          <rect
-            x="1.6"
-            y="1.6"
-            width="12.8"
-            height="12.8"
-            rx="2.6"
+          <g
             fill="none"
             stroke="currentColor"
-            stroke-width="1.3"
-          />
-          <rect x="5.5" y="5.5" width="5" height="5" rx="1.2" fill="currentColor" />
+            stroke-width="1.4"
+            stroke-linecap="round"
+          >
+            <path d="M1 5V1h4" />
+            <path d="M11 1h4v4" />
+            <path d="M15 11v4h-4" />
+            <path d="M5 15H1v-4" />
+          </g>
         </svg>
         <span class="wordmark">vitrine</span>
       </div>
@@ -46,24 +47,13 @@ const crumb = computed(() =>
 
     <main class="main">
       <div class="topbar">
-        <div v-if="activeRecord" class="crumb">
+        <nav v-if="crumb.length" class="crumb">
           <template v-for="(part, index) in crumb" :key="index">
             <span v-if="index > 0" class="crumb-sep">/</span>
             <span :class="index === crumb.length - 1 ? 'crumb-leaf' : 'crumb-dir'">
               {{ part }}
             </span>
           </template>
-        </div>
-        <nav v-if="variants.length" class="vtabs">
-          <button
-            v-for="name in variants"
-            :key="name"
-            class="vtab"
-            :class="{ active: name === activeVariant }"
-            @click="selectVariant(name)"
-          >
-            {{ name }}
-          </button>
         </nav>
       </div>
 
@@ -99,9 +89,9 @@ const crumb = computed(() =>
 .sidebar {
   display: flex;
   flex-direction: column;
-  width: 240px;
+  width: 244px;
   flex-shrink: 0;
-  background: var(--vt-surface);
+  background: var(--vt-panel);
   border-right: 1px solid var(--vt-line);
 }
 
@@ -118,14 +108,15 @@ const crumb = computed(() =>
 .mark {
   width: 16px;
   height: 16px;
-  color: var(--vt-accent);
+  color: var(--vt-blue);
 }
 
 .wordmark {
+  font-family: var(--vt-mono);
   font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--vt-text);
+  letter-spacing: 0.01em;
+  color: var(--vt-ink);
 }
 
 .main {
@@ -137,67 +128,34 @@ const crumb = computed(() =>
 
 .topbar {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   height: var(--vt-topbar);
   flex-shrink: 0;
-  background: var(--vt-surface);
+  background: var(--vt-panel);
   border-bottom: 1px solid var(--vt-line);
 }
 
 .crumb {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   padding: 0 16px;
-  flex-shrink: 0;
   font-size: 13px;
-}
-
-.crumb-dir {
-  color: var(--vt-text-3);
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .crumb-sep {
-  color: var(--vt-text-3);
+  color: var(--vt-ink-3);
+}
+
+.crumb-dir {
+  color: var(--vt-ink-2);
 }
 
 .crumb-leaf {
-  color: var(--vt-text);
+  color: var(--vt-ink);
   font-weight: 600;
-}
-
-.vtabs {
-  display: flex;
-  align-items: stretch;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.vtabs::-webkit-scrollbar {
-  display: none;
-}
-
-.vtab {
-  position: relative;
-  flex-shrink: 0;
-  padding: 0 13px;
-  font: inherit;
-  font-size: 12.5px;
-  color: var(--vt-text-3);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition: color 0.12s ease;
-}
-
-.vtab:hover {
-  color: var(--vt-text-2);
-}
-
-.vtab.active {
-  color: var(--vt-accent);
-  border-bottom-color: var(--vt-accent);
 }
 
 .stagewrap {
@@ -205,19 +163,18 @@ const crumb = computed(() =>
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--vt-canvas);
 }
 
 .placeholder {
   margin: 0;
   font-size: 13px;
-  color: var(--vt-canvas-ink-dim);
+  color: var(--vt-ink-3);
 }
 
 .panel {
-  width: 300px;
+  width: 296px;
   flex-shrink: 0;
-  background: var(--vt-surface);
+  background: var(--vt-panel);
   border-left: 1px solid var(--vt-line);
 }
 </style>

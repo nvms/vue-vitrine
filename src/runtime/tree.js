@@ -3,18 +3,23 @@
  */
 
 /**
- * A node in the sidebar tree.
+ * A node in the sidebar tree. Folders contain folders and stories; a story
+ * contains its variants; a variant is a leaf.
  *
  * @typedef {object} TreeNode
- * @property {'folder'|'story'} type
+ * @property {'folder'|'story'|'variant'} type
  * @property {string} label Display label.
  * @property {string} path Unique key within the tree.
- * @property {TreeNode[]} [children] Present on folders.
- * @property {string} [id] Story record id, present on story nodes.
+ * @property {TreeNode[]} [children] Child nodes, on folders and stories.
+ * @property {string} [storyId] Story record id, on story and variant nodes.
+ * @property {string[]} [variants] Variant names, on story nodes.
+ * @property {boolean} [single] True when a story has one variant or fewer.
+ * @property {string} [variant] Variant name, on variant nodes.
  */
 
 /**
- * Group story records into a tree by their slash-delimited title.
+ * Build the sidebar tree: story records grouped by their slash-delimited title,
+ * with each story's variants as its children.
  *
  * @param {StoryRecord[]} records
  * @returns {TreeNode[]}
@@ -44,11 +49,21 @@ export function buildTitleTree(records) {
       }
       node = child
     }
+
     node.children.push({
       type: 'story',
       label: leaf,
       path: record.id,
-      id: record.id,
+      storyId: record.id,
+      variants: record.variants,
+      single: record.variants.length <= 1,
+      children: record.variants.map((variant) => ({
+        type: 'variant',
+        label: variant,
+        path: `${record.id}::${variant}`,
+        storyId: record.id,
+        variant,
+      })),
     })
   }
 
@@ -57,13 +72,16 @@ export function buildTitleTree(records) {
 }
 
 /**
- * @param {TreeNode} folder
+ * Sort folders before stories alphabetically. Variant order is left untouched
+ * because declaration order is meaningful.
+ *
+ * @param {TreeNode} node
  */
-function sortTree(folder) {
-  if (!folder.children) return
-  folder.children.sort((a, b) => {
+function sortTree(node) {
+  if (!node.children || node.type === 'story') return
+  node.children.sort((a, b) => {
     if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
     return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
   })
-  for (const child of folder.children) sortTree(child)
+  for (const child of node.children) sortTree(child)
 }

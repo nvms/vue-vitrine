@@ -77,7 +77,10 @@ function reset(descriptor) {
           class="control"
         >
           <div class="control-head">
-            <span class="control-name" :class="{ modified: isOverridden(descriptor) }">
+            <span
+              class="control-name"
+              :class="{ modified: isOverridden(descriptor) }"
+            >
               {{ descriptor.name }}
               <span v-if="descriptor.required" class="control-req">*</span>
             </span>
@@ -128,7 +131,7 @@ function reset(descriptor) {
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--vt-text-3);
+  color: var(--vt-ink-3);
   border-bottom: 1px solid var(--vt-line);
 }
 
@@ -141,7 +144,7 @@ function reset(descriptor) {
   margin: 0;
   padding: 16px var(--vt-gutter);
   font-size: 12.5px;
-  color: var(--vt-text-3);
+  color: var(--vt-ink-3);
 }
 
 .list {
@@ -153,7 +156,7 @@ function reset(descriptor) {
 }
 
 .control + .control {
-  border-top: 1px solid var(--vt-line-soft);
+  border-top: 1px solid var(--vt-line);
 }
 
 .control-head {
@@ -167,22 +170,22 @@ function reset(descriptor) {
 .control-name {
   font-family: var(--vt-mono);
   font-size: 12px;
-  color: var(--vt-text);
+  color: var(--vt-ink);
   transition: color 0.12s ease;
 }
 
 .control-name.modified {
-  color: var(--vt-accent);
+  color: var(--vt-blue);
 }
 
 .control-req {
-  color: var(--vt-text-3);
+  color: var(--vt-ink-3);
 }
 
 .control-reset {
   font: inherit;
   font-size: 11px;
-  color: var(--vt-text-3);
+  color: var(--vt-ink-3);
   background: transparent;
   border: none;
   padding: 0;
@@ -200,13 +203,13 @@ function reset(descriptor) {
 }
 
 .control-reset:hover {
-  color: var(--vt-accent);
+  color: var(--vt-blue);
 }
 
 .control-desc {
   margin: 7px 0 0;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--vt-text-3);
+  color: var(--vt-ink-2);
 }
 </style>

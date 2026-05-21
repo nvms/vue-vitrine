@@ -71,9 +71,9 @@ function onInput(event) {
   font-family: var(--vt-mono);
   font-size: 12px;
   line-height: 1.5;
-  color: var(--vt-text);
-  background: var(--vt-input);
-  border: 1px solid var(--vt-line);
+  color: var(--vt-ink);
+  background: var(--vt-field);
+  border: 1px solid var(--vt-line-2);
   border-radius: var(--vt-radius-sm);
   resize: vertical;
   transition:
@@ -83,8 +83,8 @@ function onInput(event) {
 
 .json:focus {
   outline: none;
-  border-color: var(--vt-accent);
-  box-shadow: 0 0 0 3px var(--vt-accent-soft);
+  border-color: var(--vt-blue);
+  box-shadow: 0 0 0 3px var(--vt-blue-soft);
 }
 
 .json.invalid {

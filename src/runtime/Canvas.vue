@@ -10,11 +10,14 @@ const props = defineProps({
 
 const stage = ref(null)
 const renderError = ref(null)
+const dims = ref({ w: 0, h: 0 })
 
 /** @type {import('vue').App|null} */
 let app = null
+/** @type {ResizeObserver|null} */
+let observer = null
 
-const showStage = computed(() => {
+const showFrame = computed(() => {
   const record = props.record
   if (!record || record.error || renderError.value) return false
   return record.synthetic || record.variants.length > 0
@@ -26,6 +29,12 @@ const emptyNote = computed(() => {
     record && !record.error && !record.synthetic && record.variants.length === 0,
   )
 })
+
+function measure() {
+  if (!stage.value) return
+  const rect = stage.value.getBoundingClientRect()
+  dims.value = { w: Math.round(rect.width), h: Math.round(rect.height) }
+}
 
 function teardown() {
   if (app) {
@@ -62,14 +71,24 @@ function render() {
   } catch (cause) {
     onError(cause)
   }
+  measure()
 }
 
 watch(
   () => [props.record?.id, props.record?.component, props.variant, props.controls],
   render,
 )
-onMounted(render)
-onBeforeUnmount(teardown)
+
+onMounted(() => {
+  render()
+  observer = new ResizeObserver(measure)
+  if (stage.value) observer.observe(stage.value)
+})
+
+onBeforeUnmount(() => {
+  teardown()
+  observer?.disconnect()
+})
 </script>
 
 <template>
@@ -82,7 +101,15 @@ onBeforeUnmount(teardown)
         {{ renderError }}
       </div>
       <div v-else-if="emptyNote" class="notice">This story has no variants.</div>
-      <div v-show="showStage" ref="stage" class="stage" />
+
+      <div v-show="showFrame" class="frame">
+        <div ref="stage" class="stage" />
+        <span class="corner tl" />
+        <span class="corner tr" />
+        <span class="corner bl" />
+        <span class="corner br" />
+        <span class="dims">{{ dims.w }} &times; {{ dims.h }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -92,13 +119,17 @@ onBeforeUnmount(teardown)
   flex: 1;
   min-height: 0;
   overflow: auto;
-  background-color: var(--vt-canvas);
-  background-image: radial-gradient(
-    var(--vt-canvas-dot) 1px,
-    transparent 1px
-  );
-  background-size: 18px 18px;
-  background-position: -1px -1px;
+  background-color: var(--vt-paper);
+  background-image:
+    linear-gradient(var(--vt-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--vt-grid) 1px, transparent 1px),
+    linear-gradient(var(--vt-grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--vt-grid-major) 1px, transparent 1px);
+  background-size:
+    22px 22px,
+    22px 22px,
+    110px 110px,
+    110px 110px;
 }
 
 .canvas-pad {
@@ -107,34 +138,85 @@ onBeforeUnmount(teardown)
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px;
+  padding: 60px;
+}
+
+.frame {
+  position: relative;
+  display: inline-block;
 }
 
 .stage {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
   gap: 16px;
   align-items: center;
-  justify-content: center;
+  max-width: 100%;
+}
+
+.corner {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  pointer-events: none;
+}
+
+.corner.tl {
+  top: -8px;
+  left: -8px;
+  border-top: 1.5px solid var(--vt-bracket);
+  border-left: 1.5px solid var(--vt-bracket);
+}
+
+.corner.tr {
+  top: -8px;
+  right: -8px;
+  border-top: 1.5px solid var(--vt-bracket);
+  border-right: 1.5px solid var(--vt-bracket);
+}
+
+.corner.bl {
+  bottom: -8px;
+  left: -8px;
+  border-bottom: 1.5px solid var(--vt-bracket);
+  border-left: 1.5px solid var(--vt-bracket);
+}
+
+.corner.br {
+  bottom: -8px;
+  right: -8px;
+  border-bottom: 1.5px solid var(--vt-bracket);
+  border-right: 1.5px solid var(--vt-bracket);
+}
+
+.dims {
+  position: absolute;
+  top: calc(100% + 13px);
+  right: -8px;
+  font-family: var(--vt-mono);
+  font-size: 11px;
+  color: var(--vt-ink-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .notice {
-  max-width: 420px;
-  padding: 12px 16px;
+  max-width: 440px;
+  padding: 12px 15px;
   font-size: 12.5px;
   line-height: 1.5;
-  color: var(--vt-canvas-ink-dim);
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid var(--vt-canvas-dot);
+  color: var(--vt-ink-2);
+  background: var(--vt-field);
+  border: 1px solid var(--vt-line-2);
   border-radius: var(--vt-radius);
 }
 
 .notice-error {
   font-family: var(--vt-mono);
   font-size: 12px;
-  color: #a3271c;
+  color: var(--vt-danger);
   background: var(--vt-danger-soft);
-  border-color: rgba(226, 86, 74, 0.4);
+  border-color: rgba(200, 55, 42, 0.3);
   white-space: pre-wrap;
 }
 </style>
