@@ -2,7 +2,13 @@
 import { nextTick } from 'vue'
 import { describe, expect, it } from 'vitest'
 import ButtonStory from '../examples/forms/Button.story.vue'
-import { coerceSeed, createControlState } from '../src/runtime/controls.js'
+import Toast from '../examples/feedback/Toast.vue'
+import {
+  coerceSeed,
+  createControlState,
+  resolveControlValue,
+  runtimeDefaults,
+} from '../src/runtime/controls.js'
 import { mountStoryVariant } from '../src/runtime/mount.js'
 
 describe('coerceSeed', () => {
@@ -20,6 +26,43 @@ describe('coerceSeed', () => {
 
   it('returns undefined for an unparseable number', () => {
     expect(coerceSeed('abc', 'number')).toBeUndefined()
+  })
+})
+
+describe('runtimeDefaults', () => {
+  it('reads default prop values from a component declaration', () => {
+    const defaults = runtimeDefaults(Toast)
+    expect(defaults.dismissible).toBe(true)
+    expect(defaults.tone).toBe('info')
+  })
+
+  it('omits props that declare no default', () => {
+    expect('message' in runtimeDefaults(Toast)).toBe(false)
+  })
+})
+
+describe('resolveControlValue', () => {
+  const toggle = { name: 'dismissible', control: { kind: 'toggle' } }
+
+  it('prefers an explicit override', () => {
+    const state = createControlState()
+    state.overrides.dismissible = false
+    expect(resolveControlValue(toggle, state, { dismissible: true })).toBe(false)
+  })
+
+  it('falls back to the literal seed value from the variant markup', () => {
+    const state = createControlState()
+    state.seeds.value = { dismissible: '' }
+    expect(resolveControlValue(toggle, state, { dismissible: true })).toBe(true)
+  })
+
+  it('falls back to the component default with no override or seed', () => {
+    const state = createControlState()
+    expect(resolveControlValue(toggle, state, { dismissible: true })).toBe(true)
+  })
+
+  it('returns undefined when nothing is known', () => {
+    expect(resolveControlValue(toggle, createControlState(), {})).toBeUndefined()
   })
 })
 

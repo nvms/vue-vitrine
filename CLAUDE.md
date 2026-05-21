@@ -241,7 +241,7 @@ How a story renders:
 How controls work:
 
 1. The host reads the subject component's `__file` (set by `@vitejs/plugin-vue`) and fetches `/__vitrine/meta?file=...`, which runs `vue-component-meta` and returns control descriptors.
-2. `Controls.vue` renders a widget per descriptor. Each variant has its own `ControlState` (`overrides` + discovered `seeds`), created by the host and passed into the per-variant Canvas app.
+2. `Controls.vue` renders a widget per descriptor. Each variant has its own `ControlState` (`overrides` + discovered `seeds`), created by the host and passed into the per-variant Canvas app. A control's displayed value comes from `resolveControlValue`, in precedence order: an explicit override, then the literal value in the variant markup, then the subject's runtime default (`record.defaults`, read from the component's props declaration). Skipping the default fallback makes a control show a wrong value, e.g. a boolean prop appearing `false` when its default is `true`.
 3. `Variant.js` runs `applyControls` over its slot vnodes: it `cloneVNode`s every vnode whose type is the subject, merging the panel's `overrides` on top of the literal attributes. The first subject vnode's literal props are reported back as the seed values. No control wiring is needed in the story file.
 
 Key constraints for the next session:

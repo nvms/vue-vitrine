@@ -1,11 +1,17 @@
 <script setup>
-import { coerceSeed } from './controls.js'
+import { resolveControlValue } from './controls.js'
 import JsonField from './controls/JsonField.vue'
 import NumberField from './controls/NumberField.vue'
 import SelectField from './controls/SelectField.vue'
 import TextField from './controls/TextField.vue'
 import ToggleField from './controls/ToggleField.vue'
-import { activeControls, activeVariant, descriptors, metaStatus } from './store.js'
+import {
+  activeControls,
+  activeRecord,
+  activeVariant,
+  descriptors,
+  metaStatus,
+} from './store.js'
 
 const widgets = {
   toggle: ToggleField,
@@ -20,12 +26,11 @@ const widgets = {
  * @returns {unknown}
  */
 function valueFor(descriptor) {
-  const { overrides, seeds } = activeControls.value
-  if (descriptor.name in overrides) return overrides[descriptor.name]
-  if (descriptor.name in seeds.value) {
-    return coerceSeed(seeds.value[descriptor.name], descriptor.control.kind)
-  }
-  return undefined
+  return resolveControlValue(
+    descriptor,
+    activeControls.value,
+    activeRecord.value?.defaults,
+  )
 }
 
 /**

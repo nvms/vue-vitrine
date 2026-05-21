@@ -94,6 +94,53 @@ function mapNodes(node, subject, overrides, reportSeed, state) {
 }
 
 /**
+ * Read a component's default prop values from its runtime props declaration.
+ * Used as the control value when a prop has neither an override nor a literal
+ * value in the variant markup.
+ *
+ * @param {import('vue').Component} component
+ * @returns {Record<string, unknown>}
+ */
+export function runtimeDefaults(component) {
+  const props = component?.props
+  if (!props || Array.isArray(props)) return {}
+
+  const defaults = {}
+  for (const [name, declaration] of Object.entries(props)) {
+    if (!declaration || typeof declaration !== 'object') continue
+    if (!('default' in declaration)) continue
+    const value = declaration.default
+    defaults[name] = isFactory(declaration, value) ? callFactory(value) : value
+  }
+  return defaults
+}
+
+/**
+ * @param {object} declaration
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+function isFactory(declaration, value) {
+  if (typeof value !== 'function') return false
+  const type = declaration.type
+  if (type === Function) return false
+  if (Array.isArray(type) && type.includes(Function)) return false
+  return true
+}
+
+/**
+ * @param {Function} factory
+ * @returns {unknown}
+ */
+function callFactory(factory) {
+  try {
+    return factory()
+  } catch {
+    return undefined
+  }
+}
+
+/**
  * Coerce a raw literal prop value (read from a vnode) into the value a control
  * widget expects.
  *
@@ -115,4 +162,27 @@ export function coerceSeed(value, kind) {
     return value == null ? undefined : String(value)
   }
   return value
+}
+
+/**
+ * Resolve the value a control should display, in precedence order: an explicit
+ * override, then the literal value from the variant markup, then the
+ * component's own default.
+ *
+ * @param {import('../meta.js').ControlDescriptor} descriptor
+ * @param {ControlState} controlState
+ * @param {Record<string, unknown>} [defaults] The subject's default prop values.
+ * @returns {unknown}
+ */
+export function resolveControlValue(descriptor, controlState, defaults) {
+  const { overrides, seeds } = controlState
+  if (descriptor.name in overrides) return overrides[descriptor.name]
+
+  const seeded = seeds.value
+  if (descriptor.name in seeded) {
+    return coerceSeed(seeded[descriptor.name], descriptor.control.kind)
+  }
+
+  if (defaults && descriptor.name in defaults) return defaults[descriptor.name]
+  return undefined
 }

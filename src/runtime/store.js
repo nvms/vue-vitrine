@@ -1,6 +1,6 @@
 import { computed, markRaw, ref, shallowRef, watch } from 'vue'
 import { stories as manifest } from 'virtual:vitrine-stories'
-import { createControlState } from './controls.js'
+import { createControlState, runtimeDefaults } from './controls.js'
 import { harvestStory } from './mount.js'
 import { buildTitleTree } from './tree.js'
 
@@ -16,6 +16,7 @@ import { buildTitleTree } from './tree.js'
  * @property {string[]} variants Variant names, in declaration order.
  * @property {import('vue').Component|null} component The story file component.
  * @property {import('vue').Component|null} subject The component under test.
+ * @property {Record<string, unknown>} defaults The subject's default prop values.
  * @property {boolean} synthetic True when the story has a subject but no variants.
  * @property {string|null} error A load or mount error, if one occurred.
  */
@@ -167,6 +168,7 @@ async function loadRecord(entry, bust) {
       variants: [],
       component: null,
       subject: null,
+      defaults: {},
       synthetic: false,
       error: 'This story uses the CSF format, which is not supported yet.',
     }
@@ -196,6 +198,7 @@ async function loadRecord(entry, bust) {
     variants: synthetic ? ['Default'] : variants,
     component: markRaw(component),
     subject: subject ? markRaw(subject) : null,
+    defaults: subject ? runtimeDefaults(subject) : {},
     synthetic,
     error: error ? messageOf(error) : null,
   }
@@ -214,6 +217,7 @@ function errorRecord(base, entry, error) {
     variants: [],
     component: null,
     subject: null,
+    defaults: {},
     synthetic: false,
     error,
   }
